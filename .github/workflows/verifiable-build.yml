@@ -1,0 +1,28 @@
+name: Verifiable build
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-targets: false
+      - name: Install solana-verify
+        run: cargo install solana-verify --version 0.5.2 --locked
+      - name: Build in the verifiable-build image
+        run: solana-verify build --library-name unmarked_fees
+      - name: Executable hash
+        # the build container writes target/ as root: copy the output out before adding files next to it
+        run: |
+          mkdir -p out
+          cp target/deploy/unmarked_fees.so out/
+          solana-verify get-executable-hash out/unmarked_fees.so | tee out/unmarked_fees.hash
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unmarked_fees-program
+          path: out/

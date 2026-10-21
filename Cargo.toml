@@ -1,0 +1,38 @@
+[package]
+name = "unmarked-fees"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.89.0"
+
+[lib]
+crate-type = ["cdylib"]
+name = "unmarked_fees"
+
+[features]
+default = []
+no-entrypoint = []
+
+[dependencies]
+pinocchio = { version = "=0.11.2", features = ["cpi"] }
+pinocchio-system = "=0.6.1"
+
+# Host checks need the curve implementation; SBF uses runtime PDA syscalls.
+[target.'cfg(not(target_os = "solana"))'.dependencies]
+solana-address = { version = "2.8.0", features = ["curve25519"] }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
+
+[profile.release]
+overflow-checks = true
+opt-level = "z" # rent is paid per byte
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+
+# toolchain for the verifiable build (solana-verify picks the matching build image)
+[workspace]
+
+[workspace.metadata.cli]
+solana = "4.1.2"
